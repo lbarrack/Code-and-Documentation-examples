@@ -1,0 +1,111 @@
+SELECT DISTINCT
+
+                S.SUB_code
+
+                ,E.ET_text
+
+                --,FY.FY_number
+
+                ,AK.ACK_key
+
+                ,DH.DH_doc_number
+
+                ,PCCK.PCCK_key
+
+                ,PCTK.PCTK_key
+
+                --,PCCK.PCCK_type
+
+                ,E.ET_debit_base_amount
+
+                ,E.ET_credit_base_amount
+
+                --,E.ET_reconciliation_base_amount
+
+                ,CE.CE_debit_base_amount
+
+                ,CE.CE_credit_base_amount
+
+                ,E.Entry_ID
+
+                ,CE.Cost_entry_ID
+
+                ,DH.Document_header_ID
+
+                --,DH.DH_input_date
+
+                ,DH.DH_value_date
+
+                ,DH.DH_doc_date
+
+FROM Arizona.dbo.Profit_cost_type_text PCTT
+
+                INNER JOIN Arizona.dbo.Profit_cost_type_key PCTK
+
+                ON PCTT.PCTT_profit_cost_type = PCTK.PCTK_profit_cost_type
+
+                RIGHT OUTER JOIN Arizona.dbo.Cost_entry CE
+
+                LEFT OUTER JOIN Arizona.dbo.Profit_cost_center_key PCCK
+
+                ON CE.CE_profit_cost_center = PCCK.PCCK_profit_cost_center
+
+                ON PCTK.PCTK_profit_cost_type = CE.CE_profit_cost_type
+
+                RIGHT OUTER JOIN Arizona.dbo.Fiscal_year FY
+
+                INNER JOIN Arizona.dbo.Account_key AK
+
+                                ON FY.Fiscal_year_ID = AK.ACK_fiscal_year
+
+                INNER JOIN Arizona.dbo.Subsidiary S
+
+                                ON FY.FY_subsidiary = S.Subsidiary_ID
+
+                RIGHT OUTER JOIN Arizona.dbo.Entry E
+
+                INNER JOIN Arizona.dbo.Currency C
+
+                                ON E.ET_currency = C.Currency_ID
+
+                INNER JOIN Arizona.dbo.Document_header DH
+
+                                ON E.ET_document_header = DH.Document_header_ID
+
+                                ON AK.ACK_account = E.ET_account
+
+                                ON CE.CE_entry = E.Entry_ID
+
+ 
+
+WHERE --(FY.FY_number >= 2014) AND
+
+                 (AK.ACK_type = 1)
+
+                AND (PCCK.PCCK_fiscal_year = 143 OR PCCK.PCCK_fiscal_year IS NULL)
+
+                AND (PCTK.PCTK_fiscal_year = 143 OR PCTK.PCTK_fiscal_year IS NULL)
+
+                AND (PCCK.PCCK_type = 1 OR PCCK.PCCK_type IS NULL)
+
+                AND (PCTK.PCTK_type = 1 OR PCTK.PCTK_type IS NULL)
+
+                AND (PCTT.PCTT_fiscal_year = 143 OR PCTT.PCTT_fiscal_year IS NULL)
+
+                -----DISBLE AFTER 1st RUN------
+
+                AND (DH.DH_value_date >= $(v_StartDate))
+
+                AND (DH.DH_value_date < $(v_Today))
+
+                -----ENABLE FOR ALL RUNS AFTER 1st-----
+
+                --AND (DH.DH_input_date >= $(v_StartDate))
+
+                --AND (DH.DH_input_date < $(v_Today))
+
+                AND DH.Document_header_ID NOT IN('$(v_VoucherNo)')
+
+                --AND DH.DH_doc_number NOT Like ('OC%')
+
+                $(v_DocHeaderID)
