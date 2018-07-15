@@ -1,0 +1,17 @@
+SELECT sj.[name],
+sh.step_id,
+sh.step_name,
+sh.run_date,
+sh.run_time,
+sh.sql_severity,
+sh.message,
+sh.server
+FROM msdb.dbo.sysjobs sj
+INNER JOIN msdb.dbo.sysjobhistory sh
+ON sh.job_id = sj.job_id
+INNER JOIN msdb.dbo.sysjobsteps ss
+ON sj.job_id = ss.job_id
+AND sh.step_id = ss.step_id
+WHERE sh.run_status = 0 /*Failure-0, Success-1*/
+AND sh.run_date between    CONVERT(int,DATEADD(DAY,-8,GETDATE())) and CONVERT(int, GETDATE())
+ORDER BY sh.instance_id ASC
