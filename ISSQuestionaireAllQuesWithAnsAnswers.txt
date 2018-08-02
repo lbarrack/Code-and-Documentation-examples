@@ -1,0 +1,30 @@
+Select
+C.CatOrder,
+C.Category,
+q.QID,
+Q.QOrder,
+q.Question,
+QA.QANSWERID,
+QA.QANSWER,
+QA.TYPE,
+
+Case 	
+	when QA.Type = 'Selected' or QA.TYPE = 'SelectedText' then qa.qanswer 
+	Else ''
+	end as Selections,
+
+Case 	
+	when QA.Type = 'Selected' and a.REQID is not null then qa.qanswer 
+	When QA.TYPE = 'SelectedText' and a.REQID is not null then CONCAT(QANSWER, ' : ',Answer)
+	when a.REQID is not null then a.answer 
+	Else ''
+end as Answer
+
+From Questions Q
+Join Category C on C.CatID =Q.CatID
+inner join QANSWERS QA on qa.QID = q.QID
+--inner Join Answers a on a.QANSWERID = QA.QANSWERID  --------------Only Answered Questions
+left Join Answers a on a.QANSWERID = QA.QANSWERID ---------------All Questions with answers
+--left join ReqDetail.REQID RD on RD.REQID = A.REQID
+--where q.catid = 6 --for database only
+Order By CatOrder,QOrder
