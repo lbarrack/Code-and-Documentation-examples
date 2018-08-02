@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SharedDataSet xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/shareddatasetdefinition">
+  <DataSet Name="">
+    <Query>
+      <DataSourceReference>ISSQuestionaire</DataSourceReference>
+      <CommandText>SELECT        C.CatOrder, C.Category, Q.QID, Q.QOrder, Q.Question, QA.QANSWERID, QA.QANSWER, QA.TYPE, CASE WHEN QA.Type = 'Selected' OR
+                         QA.TYPE = 'SelectedText' THEN qa.qanswer ELSE '' END AS Selections, CASE WHEN QA.Type = 'Selected' AND a.REQID IS NOT NULL THEN qa.qanswer WHEN QA.TYPE = 'SelectedText' AND 
+                         a.REQID IS NOT NULL THEN CONCAT(QANSWER, ' : ', Answer) WHEN a.REQID IS NOT NULL THEN a.answer ELSE '' END AS Answer
+FROM            Questions AS Q INNER JOIN
+                         Category AS C ON C.CatID = Q.CatID INNER JOIN
+                         QANSWERS AS QA ON QA.QID = Q.QID LEFT OUTER JOIN
+                         Answers AS a ON a.QANSWERID = QA.QANSWERID
+ORDER BY C.CatOrder, Q.QOrder</CommandText>
+    </Query>
+    <Fields>
+      <Field Name="Category">
+        <DataField>Category</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="CatOrder">
+        <DataField>CatOrder</DataField>
+        <rd:TypeName>System.Int16</rd:TypeName>
+      </Field>
+      <Field Name="QID">
+        <DataField>QID</DataField>
+        <rd:TypeName>System.Int32</rd:TypeName>
+      </Field>
+      <Field Name="Question">
+        <DataField>Question</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="QOrder">
+        <DataField>QOrder</DataField>
+        <rd:TypeName>System.Int16</rd:TypeName>
+      </Field>
+      <Field Name="QANSWERID">
+        <DataField>QANSWERID</DataField>
+        <rd:TypeName>System.Int32</rd:TypeName>
+      </Field>
+      <Field Name="QANSWER">
+        <DataField>QANSWER</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="TYPE">
+        <DataField>TYPE</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="Answer">
+        <DataField>Answer</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="Selections">
+        <DataField>Selections</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+    </Fields>
+  </DataSet>
+</SharedDataSet>

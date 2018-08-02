@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SharedDataSet xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/shareddatasetdefinition">
+  <DataSet Name="">
+    <Query>
+      <DataSourceReference>ISSQuestionaire</DataSourceReference>
+      <CommandText>SELECT        C.Category, Q.Question, QA.CHKBOX, CASE WHEN QA.Type = 'Selected' THEN CONCAT('Select - ', QANSWER) WHEN QA.TYPE = 'SelectedText' THEN concat(CONCAT('Select - ', QANSWER), '  Type in Answer') 
+                         ELSE 'Type in Answer' END AS QuestionCont, Q.QOrder, C.CatOrder
+FROM            Questions AS Q INNER JOIN
+                         Category AS C ON C.CatID = Q.CatID INNER JOIN
+                         QANSWERS AS QA ON QA.QID = Q.QID
+ORDER BY C.CatOrder, Q.QOrder</CommandText>
+    </Query>
+    <Fields>
+      <Field Name="Category">
+        <DataField>Category</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="Question">
+        <DataField>Question</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="chkbox">
+        <DataField>CHKBOX</DataField>
+        <rd:TypeName>System.Boolean</rd:TypeName>
+      </Field>
+      <Field Name="QuestionCont">
+        <DataField>QuestionCont</DataField>
+        <rd:TypeName>System.String</rd:TypeName>
+      </Field>
+      <Field Name="QOrder">
+        <DataField>QOrder</DataField>
+        <rd:TypeName>System.Int16</rd:TypeName>
+      </Field>
+      <Field Name="CatOrder">
+        <DataField>CatOrder</DataField>
+        <rd:TypeName>System.Int16</rd:TypeName>
+      </Field>
+    </Fields>
+  </DataSet>
+</SharedDataSet>
