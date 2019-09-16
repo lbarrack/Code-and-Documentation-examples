@@ -1,0 +1,186 @@
+ 
+--Step 1: Setting NULLs and quoted identifiers to ON and checking the version of SQL Server 
+		GO
+		SET ANSI_NULLS ON
+		GO
+		SET QUOTED_IDENTIFIER ON
+		GO
+
+IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id = OBJECT_ID(N'prodver') AND OBJECTPROPERTY(id, N'IsUserTable') = 1)                        
+drop table prodver
+create table prodver ([index] int, Name nvarchar(50),Internal_value int, Charcater_Value nvarchar(50))
+insert into prodver exec xp_msver 'ProductVersion'
+	if (select substring(Charcater_Value,1,1)from prodver)!=8
+	begin
+	
+                   
+-- Step 2: This code will be used if the instance is Not SQL Server 2000 
+
+		Declare @image_path nvarchar(100)                        
+		Declare @startup_type int                        
+		Declare @startuptype nvarchar(100)                        
+		Declare @start_username nvarchar(100)                        
+		Declare @instance_name nvarchar(100)                        
+		Declare @system_instance_name nvarchar(100)                        
+		Declare @log_directory nvarchar(100)                        
+		Declare @key nvarchar(1000)                        
+		Declare @registry_key nvarchar(100)                        
+		Declare @registry_key1 nvarchar(300)                        
+		Declare @registry_key2 nvarchar(300)                        
+		Declare @IpAddress nvarchar(20)                        
+		Declare @domain nvarchar(50)                        
+		Declare @cluster int                        
+		Declare @instance_name1 nvarchar(100)                        
+-- Step 3: Reading registry keys for IP,Binaries,Startup type ,startup username, errorlogs location and domain.
+		SET @instance_name = coalesce(convert(nvarchar(100), serverproperty('InstanceName')),'MSSQLSERVER');                        
+		If @instance_name!='MSSQLSERVER'                        
+		Set @instance_name=@instance_name                       
+	 
+    		Set @instance_name1= coalesce(convert(nvarchar(100), serverproperty('InstanceName')),'MSSQLSERVER');                        
+		If @instance_name1!='MSSQLSERVER'                        
+		Set @instance_name1='MSSQL$'+@instance_name1                        
+		EXEC master.dbo.xp_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\Microsoft SQL Server\Instance Names\SQL', @instance_name, @system_instance_name output;                        
+                        
+		Set @key=N'SYSTEM\CurrentControlSet\Services\' +@instance_name1;                        
+		SET @registry_key = N'Software\Microsoft\Microsoft SQL Server\' + @system_instance_name + '\MSSQLServer\Parameters';                        
+		If @registry_key is NULL                        
+		set @instance_name=coalesce(convert(nvarchar(100), serverproperty('InstanceName')),'MSSQLSERVER');                        
+		EXEC master.dbo.xp_regread N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\Microsoft SQL Server\Instance Names\SQL', @instance_name, @system_instance_name output;                        
+
+		SET @registry_key = N'Software\Microsoft\Microsoft SQL Server\' + @system_instance_name + '\MSSQLServer\Parameters';                        
+		SET @registry_key1 = N'Software\Microsoft\Microsoft SQL Server\' + @system_instance_name + '\MSSQLServer\supersocketnetlib\TCP\IP1';                        
+		SET @registry_key2 = N'SYSTEM\ControlSet001\Services\Tcpip\Parameters\';                        
+                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@key,@value_name='ImagePath',@value=@image_path OUTPUT                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@key,@value_name='Start',@value=@startup_type OUTPUT                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@key,@value_name='ObjectName',@value=@start_username OUTPUT                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@registry_key,@value_name='SQLArg1',@value=@log_directory OUTPUT                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@registry_key1,@value_name='IpAddress',@value=@IpAddress OUTPUT                        
+		EXEC master.dbo.xp_regread 'HKEY_LOCAL_MACHINE',@registry_key2,@value_name='Domain',@value=@domain OUTPUT                        
+                        
+		Set @startuptype= 	(select 'Start Up Mode' =                        
+					CASE                        
+					WHEN @startup_type=2 then 'AUTOMATIC'                        
+					WHEN @startup_type=3 then 'MANUAL'                        
+					WHEN @startup_type=4 then 'Disabled'                        
+					END)                        
+                        
+--Step 4: Getting the cluster node names if the server is on cluster .else this value will be NULL.
+
+		declare @Out nvarchar(400)                        
+		SELECT @Out = COALESCE(@Out+'' ,'') + Nodename                        
+		from sys.dm_os_cluster_nodes                        
+                        
+-- Step 5: printing Server details -- use for sql 2012 or higher ROUND(physical_memory_kb / 1048576.0, 0)) AS TotalRAMInGB
+                        
+			SELECT                       
+			--@domain as 'Domain',                      
+			serverproperty('ComputerNamePhysicalNetBIOS') as 'MachineName',                      
+			CPU_COUNT as 'CPUCount',
+			(ROUND(physical_memory_kb / 1048576.0, 0)) AS TotalRAMInGB,                      
+			--@Ipaddress as 'IP_Address',                      
+			@instance_name1 as 'InstanceName',
+			--@image_path as 'BinariesPath',                      
+			--@log_directory as 'ErrorLogsLocation',                      
+			@start_username as 'StartupUser',                      
+			--@Startuptype as 'StartupType',                      
+			serverproperty('Productlevel') as 'ServicePack',                      
+			serverproperty('edition') as 'Edition',                      
+			serverproperty('productversion') as 'Version',                      
+			--serverproperty('collation') as 'Collation',                      
+			serverproperty('Isclustered') as 'ISClustered',                      
+			@out as 'ClusterNodes',                      
+			serverproperty('IsFullTextInstalled') as 'ISFullText'                       
+			From sys.dm_os_sys_info                         
+                      
+
+-- Step 6: Printing database details 
+				
+			SELECT    Distinct                   
+			serverproperty ('ComputerNamePhysicalNetBIOS') as 'Machine'                      
+			,@instance_name1 as InstanceName,                      
+			(SELECT 'file_type' =                      
+		 		CASE                      
+		 			WHEN s.groupid <> 0 THEN 'data'                      
+		 			WHEN s.groupid = 0 THEN 'log'                      
+		 		END) AS 'fileType'                      
+		 	, d.dbid as 'DBID'                      
+		 	, d.name AS 'DBName'                      
+		 	--, s.name AS 'LogicalFileName'                      
+		 	--, s.filename AS 'PhysicalFileName'                      
+ 		 	--, (s.size * 8 / 1024) AS 'FileSizeMB' -- file size in MB                      
+ 		 	, d.cmptlevel as 'CompatibilityLevel'                      
+ 		 	, DATABASEPROPERTYEX (d.name,'Recovery') as 'RecoveryModel'                      
+ 		 	, DATABASEPROPERTYEX (d.name,'Status') as 'DatabaseStatus'                      
+ 		 	--, d.is_published as 'Publisher'                      
+ 		 	--, d.is_subscribed as 'Subscriber'                      
+ 		 	--, d.is_distributor as 'Distributor' 
+ 		 	--(SELECT 'is_replication' =                      
+			-- CASE                      
+			--WHEN d.category = 1 THEN 'Published'                      
+			--WHEN d.category = 2 THEN 'subscribed'                      
+			--WHEN d.category = 4 THEN 'Merge published'
+			--WHEN d.category = 8 THEN 'merge subscribed'
+			--Else 'NO replication'
+			--END) AS 'Is_replication'                      
+ 		 	--, m.mirroring_state as 'MirroringState'                      
+			--INTO master.[dbo].[databasedetails]                      
+			FROM                      
+			sys.sysdatabases d INNER JOIN sys.sysaltfiles s                      
+			ON                      
+			d.dbid=s.dbid                      
+			INNER JOIN sys.database_mirroring m                      
+			ON                      
+			d.dbid=m.database_id                      
+			ORDER BY                      
+			d.name                      
+          
+          
+          
+
+
+--Step 7 :printing Backup details                       
+
+			Select distinct                             
+			b.machine_name as 'ServerName',                        
+			b.server_name as 'InstanceName',                        
+			b.database_name as 'DatabaseName',                            
+			d.database_id 'DBID',                            
+			CASE b.[type]                                  
+			WHEN 'D' THEN 'Full'                                  
+			WHEN 'I' THEN 'Differential'                                  
+			WHEN 'L' THEN 'Transaction Log'                                  
+			END as 'BackupType'                                 
+			--INTO [dbo].[backupdetails]                        
+			from sys.databases d inner join msdb.dbo.backupset b                            
+			On b.database_name =d.name                        
+
+
+End
+GO
+Create Table ##temp
+(
+    DatabaseName sysname,
+    Name sysname,
+    physical_name nvarchar(500),
+    size decimal (18,2),
+    FreeSpace decimal (18,2)
+)   
+Exec sp_msforeachdb '
+Use [?];
+Insert Into ##temp (DatabaseName, Name, physical_name, Size, FreeSpace)
+    Select DB_NAME() AS [DatabaseName], Name,  physical_name,
+    Cast(Cast(Round(cast(size as decimal) * 8.0/1024.0,2) as decimal(18,2)) as nvarchar) Size,
+    Cast(Cast(Round(cast(size as decimal) * 8.0/1024.0,2) as decimal(18,2)) -
+        Cast(FILEPROPERTY(name, ''SpaceUsed'') * 8.0/1024.0 as decimal(18,2)) as nvarchar) As FreeSpace
+    From sys.database_files
+'
+Select
+DatabaseName ,
+    Name ,
+    physical_name,
+    size as [Size (KB)] ,
+    FreeSpace as [FreeSpace (KB)]
+	From ##temp
+drop table ##temp
+GO

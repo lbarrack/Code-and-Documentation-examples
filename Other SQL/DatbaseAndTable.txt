@@ -1,0 +1,19 @@
+Create Database AGLTest
+Go
+
+Use AGLTest
+
+CREATE TABLE  members (
+  id int NOT NULL identity(1,1),
+  firstName varchar(50) NOT NULL,
+  lastName varchar(50) NOT NULL,
+  age int NOT NULL,
+  PRIMARY KEY  (id)
+) 
+
+
+
+INSERT INTO members ( firstName, lastName, age) VALUES
+('Jim', 'Taylor', 34),
+( 'John', 'McGregor', 23),
+( 'Alice', 'Anderson', 33);
